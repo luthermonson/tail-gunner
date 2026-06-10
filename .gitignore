@@ -1,0 +1,9 @@
+/tail-gunner
+/tail-gunner.exe
+*.exe~
+dist/
+*.test
+coverage.out
+.idea/
+app.log
+*.debug.log
