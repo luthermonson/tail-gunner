@@ -210,6 +210,67 @@ tail-gunner -f app.log
 # press q    to go back to plain tail
 ```
 
+## Using it as a k9s plugin
+
+tail-gunner makes a great log viewer inside [k9s](https://k9scli.io):
+select a pod, hit `Ctrl-L`, and you're in tail-gunner on the live stream —
+filter out the noise with `:out`, stack colored searches, then `Ctrl-C`
+back into k9s. A plugin with `background: false` suspends the k9s UI and
+hands tail-gunner the real terminal, so `:` promotion and all the
+interactive features just work.
+
+Setup:
+
+1. Have `tail-gunner` and `kubectl` on your PATH.
+2. Find your k9s config directory with `k9s info` — `plugins.yaml` lives
+   next to `config.yaml` (`~/.config/k9s/` on Linux/macOS,
+   `%LOCALAPPDATA%\k9s\` on Windows).
+3. Paste the config below into `plugins.yaml` and restart k9s.
+4. In the pod or container view you should see `<ctrl-l> tail-gunner logs`
+   in the header menu.
+
+> Heads up if you're on an old k9s (≤ v0.26): the file is `plugin.yml` —
+> singular — with a top-level `plugin:` key, same entries otherwise. Also
+> pick your shortcut carefully: keys like `Ctrl-G` are silently shadowed by
+> k9s built-ins; `Ctrl-L` is free.
+
+```yaml
+plugins:
+  # Ctrl-L in pod view: stream pod logs through tail-gunner
+  tail-gunner:
+    shortCut: Ctrl-L
+    description: tail-gunner logs
+    scopes:
+      - po
+    command: sh        # on Windows use `command: cmd` with `/c`
+    background: false
+    args:
+      - -c
+      - kubectl logs -f --tail=500 $NAME -n $NAMESPACE --context $CONTEXT --kubeconfig $KUBECONFIG --all-containers=true 2>&1 | tail-gunner -f
+
+  # same shortcut inside a pod's container view: just that container
+  tail-gunner-container:
+    shortCut: Ctrl-L
+    description: tail-gunner logs
+    scopes:
+      - containers
+    command: sh
+    background: false
+    args:
+      - -c
+      - kubectl logs -f --tail=500 $POD -c $NAME -n $NAMESPACE --context $CONTEXT --kubeconfig $KUBECONFIG 2>&1 | tail-gunner -f
+```
+
+`--kubeconfig $KUBECONFIG` pins kubectl to the exact config k9s is connected
+with (k9s and your shell may disagree), and `2>&1` routes kubectl errors
+into tail-gunner where you can see them instead of hanging a blank screen.
+
+Then in k9s: select a pod, hit `Ctrl-L`, and you're tailing — press `:` to
+start gunning down noise (`:out healthcheck`), `Ctrl-C` to drop back into
+k9s. The shell wrapper (`sh -c` / `powershell -Command`) is required because
+k9s execs commands directly and the kubectl→tail-gunner pipe needs a shell.
+`kubectl` and `tail-gunner` must both be on your PATH.
+
 ## Using it as a library
 
 Everything lives under `pkg/` and is importable — the follow engine
