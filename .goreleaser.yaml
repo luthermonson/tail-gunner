@@ -21,8 +21,11 @@ builds:
     ldflags:
       - -s -w -X main.version={{.Version}}
 
-# defaults produce tar.gz (zip for windows) named
-# tail-gunner_<version>_<os>_<arch> plus a checksums file
+archives:
+  - formats: [tar.gz]
+    format_overrides:
+      - goos: windows
+        formats: [zip]
 
 changelog:
   filters:
