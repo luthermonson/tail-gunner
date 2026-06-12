@@ -6,7 +6,7 @@
 set -u
 TG=./tail-gunner.exe
 [ -f "$TG" ] || TG=./tail-gunner
-GNU=tail
+GNU="${GNU_TAIL:-tail}"   # set GNU_TAIL=gtail on macOS (BSD tail differs)
 
 tmp=test/tmp
 rm -rf "$tmp"; mkdir -p "$tmp"
